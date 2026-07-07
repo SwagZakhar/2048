@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QMainWindow, QWidget, QGridLayout, QLabel
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QKeyEvent
 
 class GameWindow(QMainWindow):
     def __init__(self, game):
@@ -10,38 +10,32 @@ class GameWindow(QMainWindow):
 
     def init_ui(self):
         self.setWindowTitle("2048 на PyQt6")
-        self.setFixedSize(400, 450)  # Окно фиксированного размера
+        self.setFixedSize(400, 450)
         
-        # Главный виджет и сетка
         self.central_widget = QWidget(self)
         self.setCentralWidget(self.central_widget)
         self.grid_layout = QGridLayout(self.central_widget)
-        self.grid_layout.setSpacing(10)  # Отступы между плитками
+        self.grid_layout.setSpacing(10)
         
-        # Двумерный массив для хранения графических ярлыков (label)
         self.labels = [[None] * self.game.size for _ in range(self.game.size)]
         
-        # Создаем сетку из QLabel
         for r in range(self.game.size):
             for c in range(self.game.size):
                 label = QLabel("", self)
                 label.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 label.setFont(QFont("Arial", 22, QFont.Weight.Bold))
-                
-                # Задаем базовый стиль (позже сделаем красивые цвета для каждого числа)
                 label.setStyleSheet(
                     "background-color: #CDC1B4; "
                     "color: #776E65; "
                     "border-radius: 5px;"
                 )
-                
                 self.grid_layout.addWidget(label, r, c)
                 self.labels[r][c] = label
                 
         self.update_ui()
 
     def update_ui(self):
-        """Обновляет текст на плитках в соответствии с матрицей логики."""
+        """Обновляет текст на плитках и текущий счет."""
         for r in range(self.game.size):
             for c in range(self.game.size):
                 value = self.game.grid[r][c]
@@ -50,10 +44,18 @@ class GameWindow(QMainWindow):
                     self.labels[r][c].setStyleSheet("background-color: #CDC1B4; border-radius: 5px;")
                 else:
                     self.labels[r][c].setText(str(value))
-                    # Временный простой стиль для цифр
                     self.labels[r][c].setStyleSheet(
-                        f"background-color: #EEE4DA; color: #776E65; border-radius: 5px;"
+                        "background-color: #EEE4DA; color: #776E65; border-radius: 5px;"
                     )
         
-        # Выводим счет в заголовок окна (пока не создали отдельное поле для счета)
+        # Динамически обновляем счет в шапке окна
         self.setWindowTitle(f"2048 | Счет: {self.game.score}")
+
+    def keyPressEvent(self, event: QKeyEvent):
+        """Обработка нажатия стрелки Влево."""
+        if event.key() == Qt.Key.Key_Left:
+            if self.game.move_left():
+                self.game.add_new_tile()
+                self.update_ui()
+        else:
+            super().keyPressEvent(event)
