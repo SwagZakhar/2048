@@ -24,18 +24,13 @@ class GameWindow(QMainWindow):
                 label = QLabel("", self)
                 label.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 label.setFont(QFont("Arial", 22, QFont.Weight.Bold))
-                label.setStyleSheet(
-                    "background-color: #CDC1B4; "
-                    "color: #776E65; "
-                    "border-radius: 5px;"
-                )
+                label.setStyleSheet("background-color: #CDC1B4; color: #776E65; border-radius: 5px;")
                 self.grid_layout.addWidget(label, r, c)
                 self.labels[r][c] = label
                 
         self.update_ui()
 
     def update_ui(self):
-        """Обновляет текст на плитках и текущий счет."""
         for r in range(self.game.size):
             for c in range(self.game.size):
                 value = self.game.grid[r][c]
@@ -44,18 +39,24 @@ class GameWindow(QMainWindow):
                     self.labels[r][c].setStyleSheet("background-color: #CDC1B4; border-radius: 5px;")
                 else:
                     self.labels[r][c].setText(str(value))
-                    self.labels[r][c].setStyleSheet(
-                        "background-color: #EEE4DA; color: #776E65; border-radius: 5px;"
-                    )
+                    self.labels[r][c].setStyleSheet("background-color: #EEE4DA; color: #776E65; border-radius: 5px;")
         
-        # Динамически обновляем счет в шапке окна
         self.setWindowTitle(f"2048 | Счет: {self.game.score}")
 
     def keyPressEvent(self, event: QKeyEvent):
-        """Обработка нажатия стрелки Влево."""
+        moved = False
         if event.key() == Qt.Key.Key_Left:
-            if self.game.move_left():
-                self.game.add_new_tile()
-                self.update_ui()
+            moved = self.game.move('left')
+        elif event.key() == Qt.Key.Key_Right:
+            moved = self.game.move('right')
+        elif event.key() == Qt.Key.Key_Up:
+            moved = self.game.move('up')
+        elif event.key() == Qt.Key.Key_Down:
+            moved = self.game.move('down')
         else:
             super().keyPressEvent(event)
+            return
+
+        if moved:
+            self.game.add_new_tile()
+            self.update_ui()
