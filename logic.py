@@ -22,3 +22,17 @@ class Game2048:
         if empty_cells:
             r, c = random.choice(empty_cells)
             self.grid[r][c] = 4 if random.random() < 0.1 else 2
+
+    def move_left(self):
+        """Сдвигает все элементы матрицы влево (без слияния)."""
+        old_grid = [row[:] for row in self.grid]
+        
+        for r in range(self.size):
+            # Собираем только ненулевые элементы строки
+            non_zero = [num for num in self.grid[r] if num != 0]
+            # Добираем нулями до размера сетки
+            new_row = non_zero + [0] * (self.size - len(non_zero))
+            self.grid[r] = new_row
+            
+        # Возвращаем True, если матрица изменилась
+        return self.grid != old_grid
