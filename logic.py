@@ -64,3 +64,25 @@ class Game2048:
                     self.grid[r][c] = merged[r]
 
         return self.grid != old_grid
+
+    def is_game_over(self):
+        # Если есть пустые клетки — игра продолжается
+        for r in range(self.size):
+            for c in range(self.size):
+                if self.grid[r][c] == 0:
+                    return False
+
+        # Проверяем возможность слияния по горизонтали
+        for r in range(self.size):
+            for c in range(self.size - 1):
+                if self.grid[r][c] == self.grid[r][c + 1]:
+                    return False
+
+        # Проверяем возможность слияния по вертикали
+        for r in range(self.size - 1):
+            for c in range(self.size):
+                if self.grid[r][c] == self.grid[r + 1][c]:
+                    return False
+
+        # Если свободных мест нет и слияния невозможны — это проигрыш
+        return True

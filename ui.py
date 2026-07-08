@@ -1,4 +1,5 @@
-from PyQt6.QtWidgets import QMainWindow, QWidget, QGridLayout, QLabel, QVBoxLayout
+import os
+from PyQt6.QtWidgets import QMainWindow, QWidget, QGridLayout, QLabel, QVBoxLayout, QMessageBox
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QKeyEvent
 
@@ -16,6 +17,8 @@ TILE_COLORS = {
     1024: ("#EDC53F", "#F9F6F2"),
     2048: ("#EDC22E", "#F9F6F2"),
 }
+
+HIGHSCORE_FILE = "highscore.txt"
 
 
 class GameWindow(QMainWindow):
@@ -56,6 +59,19 @@ class GameWindow(QMainWindow):
 
         self.update_ui()
 
+    def get_highscore(self):
+        if os.path.exists(HIGHSCORE_FILE):
+            try:
+                with open(HIGHSCORE_FILE, "r") as f:
+                    return int(f.read().strip())
+            except ValueError:
+                return 0
+        return 0
+
+    def save_highscore(self, score):
+        with open(HIGHSCORE_FILE, "w") as f:
+            f.write(str(score))
+
     def update_ui(self):
         for r in range(self.game.size):
             for c in range(self.game.size):
@@ -69,7 +85,37 @@ class GameWindow(QMainWindow):
                     f"background-color: {bg_color}; color: {text_color}; border-radius: 5px;"
                 )
 
-        self.score_label.setText(f"Счёт: {self.game.score}")
+        highscore = self.get_highscore()
+        self.score_label.setText(f"Счёт: {self.game.score}  |  Рекорд: {max(highscore, self.game.score)}")
+
+    def show_game_over_message(self):
+        current_score = self.game.score
+        old_highscore = self.get_highscore()
+        is_new_record = current_score > old_highscore
+
+        if is_new_record:
+            self.save_highscore(current_score)
+            title = "🎉 Новый рекорд!"
+            message = f"Поздравляем! Вы побили прошлый рекорд!\n\nВаш счёт: {current_score}\nПредыдущий рекорд: {old_highscore}"
+        else:
+            title = "Игра окончена"
+            message = f"Ходов больше нет.\n\nВаш счёт: {current_score}\nЛучший результат: {old_highscore}"
+
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle(title)
+        msg_box.setText(message)
+        
+        # Настройка кнопок на русском
+        retry_button = msg_box.addButton("Заново", QMessageBox.ButtonRole.AcceptRole)
+        exit_button = msg_box.addButton("Выход", QMessageBox.ButtonRole.RejectRole)
+        
+        msg_box.exec()
+
+        if msg_box.clickedButton() == retry_button:
+            self.game.reset_game()
+            self.update_ui()
+        else:
+            self.close()
 
     def keyPressEvent(self, event: QKeyEvent):
         moved = False
@@ -84,6 +130,11 @@ class GameWindow(QMainWindow):
         else:
             super().keyPressEvent(event)
             return
+
         if moved:
             self.game.add_new_tile()
             self.update_ui()
+            
+            # Проверяем проигрыш после каждого успешного хода
+            if self.game.is_game_over():
+                self.show_game_over_message()
