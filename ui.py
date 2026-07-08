@@ -144,6 +144,19 @@ class GameWindow(QMainWindow):
 
         card_layout.addLayout(buttons_layout)
 
+        reset_highscore_button = QPushButton("Сбросить рекорд", self.overlay_card)
+        reset_highscore_button.setFont(QFont("Arial", 10))
+        reset_highscore_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        reset_highscore_button.setStyleSheet(
+            "QPushButton {"
+            "background-color: transparent; color: #8F7A66;"
+            "text-decoration: underline; border: none; padding: 4px;"
+            "}"
+            "QPushButton:hover { color: #776E65; }"
+        )
+        reset_highscore_button.clicked.connect(self.reset_highscore)
+        card_layout.addWidget(reset_highscore_button, alignment=Qt.AlignmentFlag.AlignCenter)
+
         outer_layout.addWidget(self.overlay_card)
 
     def get_highscore(self):
@@ -158,6 +171,11 @@ class GameWindow(QMainWindow):
     def save_highscore(self, score):
         with open(HIGHSCORE_FILE, "w") as f:
             f.write(str(score))
+
+    def reset_highscore(self):
+        if os.path.exists(HIGHSCORE_FILE):
+            os.remove(HIGHSCORE_FILE)
+        self.update_ui()
 
     def update_ui(self):
         for r in range(self.game.size):
