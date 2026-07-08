@@ -19,7 +19,7 @@ TILE_COLORS = {
     512: ("#EDC850", "#F9F6F2"),
     1024: ("#EDC53F", "#F9F6F2"),
     2048: ("#EDC22E", "#F9F6F2"),
-    4096: ("#A370F7", "#F9F6F2"),  # Цвет для победной плитки
+    4096: ("#A370F7", "#F9F6F2"),
 }
 
 HIGHSCORE_FILE = "highscore.txt"
@@ -33,23 +33,30 @@ class GameWindow(QMainWindow):
 
     def init_ui(self):
         self.setWindowTitle("2048 game")
-        self.setFixedSize(400, 500)
+        self.setFixedSize(400, 520)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
+        # Главный виджет и фон всего окна
         self.central_widget = QWidget(self)
         self.setCentralWidget(self.central_widget)
+        self.central_widget.setStyleSheet("background-color: #FAF8EF;")
 
         main_layout = QVBoxLayout(self.central_widget)
+        main_layout.setContentsMargins(20, 20, 20, 20)
 
+        # Панель счета
         self.score_label = QLabel("Счёт: 0", self)
         self.score_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.score_label.setFont(QFont("Arial", 18, QFont.Weight.Bold))
-        self.score_label.setStyleSheet("color: #776E65; padding: 10px;")
+        self.score_label.setFont(QFont("Arial", 16, QFont.Weight.Bold))
+        self.score_label.setStyleSheet("color: #776E65; background-color: #BBADA0; color: #F9F6F2; border-radius: 6px; padding: 8px;")
         main_layout.addWidget(self.score_label)
 
+        # Игровое поле (контейнер с бежевым фоном)
         grid_widget = QWidget(self)
+        grid_widget.setStyleSheet("background-color: #BBADA0; border-radius: 6px;")
         self.grid_layout = QGridLayout(grid_widget)
-        self.grid_layout.setSpacing(10)
+        self.grid_layout.setSpacing(12)
+        self.grid_layout.setContentsMargins(12, 12, 12, 12)
         main_layout.addWidget(grid_widget)
 
         self.labels = [[None] * self.game.size for _ in range(self.game.size)]
@@ -58,7 +65,6 @@ class GameWindow(QMainWindow):
             for c in range(self.game.size):
                 label = QLabel("", self)
                 label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                label.setFont(QFont("Arial", 22, QFont.Weight.Bold))
                 self.grid_layout.addWidget(label, r, c)
                 self.labels[r][c] = label
 
@@ -67,7 +73,7 @@ class GameWindow(QMainWindow):
 
     def init_game_over_overlay(self):
         self.overlay = QWidget(self.central_widget)
-        self.overlay.setGeometry(0, 0, 400, 500)
+        self.overlay.setGeometry(0, 0, 400, 520)
         self.overlay.setStyleSheet("background-color: rgba(238, 228, 218, 200);")
         self.overlay.hide()
 
@@ -151,17 +157,23 @@ class GameWindow(QMainWindow):
             try:
                 with open(HIGHSCORE_FILE, "r") as f:
                     return int(f.read().strip())
-            except ValueError:
+            except Exception:
                 return 0
         return 0
 
     def save_highscore(self, score):
-        with open(HIGHSCORE_FILE, "w") as f:
-            f.write(str(score))
+        try:
+            with open(HIGHSCORE_FILE, "w") as f:
+                f.write(str(score))
+        except Exception:
+            pass
 
     def reset_highscore(self):
         if os.path.exists(HIGHSCORE_FILE):
-            os.remove(HIGHSCORE_FILE)
+            try:
+                os.remove(HIGHSCORE_FILE)
+            except Exception:
+                pass
         self.update_ui()
 
     def update_ui(self):
@@ -177,17 +189,17 @@ class GameWindow(QMainWindow):
                     label.setText(str(value))
                 
                 if value >= 1000:
-                    font_size = 18
+                    font_size = 16
                 else:
-                    font_size = 22
+                    font_size = 20
                 
                 label.setFont(QFont("Arial", font_size, QFont.Weight.Bold))
                 label.setStyleSheet(
-                    f"background-color: {bg_color}; color: {text_color}; border-radius: 5px;"
+                    f"background-color: {bg_color}; color: {text_color}; border-radius: 4px;"
                 )
 
         highscore = self.get_highscore()
-        self.score_label.setText(f"Счёт: {self.game.score}  |  Рекорд: {max(highscore, self.game.score)}")
+        self.score_label.setText(f"Счёт: {self.game.score}   |   Рекорд: {max(highscore, self.game.score)}")
 
     def show_game_over_message(self, won=False):
         current_score = self.game.score
@@ -200,7 +212,7 @@ class GameWindow(QMainWindow):
             self.overlay_icon.setText("👑")
             self.overlay_title.setText("Вы победили!")
             self.overlay_message.setText(
-                f"Поздравляем! Вы успешно объединили две плитки 2048 и получили 4096!\nВаш счёт: {current_score}"
+                f"Поздравляем! Вы успешно объединили две плитки 2048!\nВаш счёт: {current_score}"
             )
         elif current_score > old_highscore:
             self.overlay_icon.setText("🏆")
@@ -229,13 +241,14 @@ class GameWindow(QMainWindow):
             return
 
         moved = False
-        if event.key() == Qt.Key.Key_Left:
+        key = event.key()
+        if key in (Qt.Key.Key_Left, Qt.Key.Key_A):
             moved = self.game.move('left')
-        elif event.key() == Qt.Key.Key_Right:
+        elif key in (Qt.Key.Key_Right, Qt.Key.Key_D):
             moved = self.game.move('right')
-        elif event.key() == Qt.Key.Key_Up:
+        elif key in (Qt.Key.Key_Up, Qt.Key.Key_W):
             moved = self.game.move('up')
-        elif event.key() == Qt.Key.Key_Down:
+        elif key in (Qt.Key.Key_Down, Qt.Key.Key_S):
             moved = self.game.move('down')
         else:
             super().keyPressEvent(event)

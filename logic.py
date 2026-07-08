@@ -68,7 +68,7 @@ class Game2048:
     def is_won(self):
         for r in range(self.size):
             for c in range(self.size):
-                if self.grid[r][c] >= 4096:
+                if self.grid[r][c] >= 2048:
                     return True
         return False
 
