@@ -19,6 +19,7 @@ TILE_COLORS = {
     512: ("#EDC850", "#F9F6F2"),
     1024: ("#EDC53F", "#F9F6F2"),
     2048: ("#EDC22E", "#F9F6F2"),
+    4096: ("#A370F7", "#F9F6F2"),  # Цвет для победной плитки
 }
 
 HIGHSCORE_FILE = "highscore.txt"
@@ -31,7 +32,7 @@ class GameWindow(QMainWindow):
         self.init_ui()
 
     def init_ui(self):
-        self.setWindowTitle("2048 на PyQt6")
+        self.setWindowTitle("2048 game")
         self.setFixedSize(400, 500)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
@@ -62,11 +63,9 @@ class GameWindow(QMainWindow):
                 self.labels[r][c] = label
 
         self.init_game_over_overlay()
-
         self.update_ui()
 
     def init_game_over_overlay(self):
-        # Полупрозрачная подложка на всё окно
         self.overlay = QWidget(self.central_widget)
         self.overlay.setGeometry(0, 0, 400, 500)
         self.overlay.setStyleSheet("background-color: rgba(238, 228, 218, 200);")
@@ -75,12 +74,9 @@ class GameWindow(QMainWindow):
         outer_layout = QVBoxLayout(self.overlay)
         outer_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        # Карточка по центру
         self.overlay_card = QWidget(self.overlay)
         self.overlay_card.setFixedWidth(320)
-        self.overlay_card.setStyleSheet(
-            "background-color: #FAF8EF; border-radius: 16px;"
-        )
+        self.overlay_card.setStyleSheet("background-color: #FAF8EF; border-radius: 16px;")
 
         shadow = QGraphicsDropShadowEffect(self.overlay_card)
         shadow.setBlurRadius(30)
@@ -120,10 +116,7 @@ class GameWindow(QMainWindow):
         retry_button.setFont(QFont("Arial", 12, QFont.Weight.Bold))
         retry_button.setCursor(Qt.CursorShape.PointingHandCursor)
         retry_button.setStyleSheet(
-            "QPushButton {"
-            "background-color: #8F7A66; color: #F9F6F2;"
-            "padding: 10px 0px; border-radius: 8px; border: none;"
-            "}"
+            "QPushButton { background-color: #8F7A66; color: #F9F6F2; padding: 10px 0px; border-radius: 8px; border: none; }"
             "QPushButton:hover { background-color: #7A6857; }"
         )
         retry_button.clicked.connect(self.restart_game)
@@ -133,10 +126,7 @@ class GameWindow(QMainWindow):
         exit_button.setFont(QFont("Arial", 12, QFont.Weight.Bold))
         exit_button.setCursor(Qt.CursorShape.PointingHandCursor)
         exit_button.setStyleSheet(
-            "QPushButton {"
-            "background-color: #BBADA0; color: #F9F6F2;"
-            "padding: 10px 0px; border-radius: 8px; border: none;"
-            "}"
+            "QPushButton { background-color: #BBADA0; color: #F9F6F2; padding: 10px 0px; border-radius: 8px; border: none; }"
             "QPushButton:hover { background-color: #A69787; }"
         )
         exit_button.clicked.connect(self.close)
@@ -148,10 +138,7 @@ class GameWindow(QMainWindow):
         reset_highscore_button.setFont(QFont("Arial", 10))
         reset_highscore_button.setCursor(Qt.CursorShape.PointingHandCursor)
         reset_highscore_button.setStyleSheet(
-            "QPushButton {"
-            "background-color: transparent; color: #8F7A66;"
-            "text-decoration: underline; border: none; padding: 4px;"
-            "}"
+            "QPushButton { background-color: transparent; color: #8F7A66; text-decoration: underline; border: none; padding: 4px; }"
             "QPushButton:hover { color: #776E65; }"
         )
         reset_highscore_button.clicked.connect(self.reset_highscore)
@@ -182,24 +169,40 @@ class GameWindow(QMainWindow):
             for c in range(self.game.size):
                 value = self.game.grid[r][c]
                 bg_color, text_color = TILE_COLORS.get(value, ("#3C3A32", "#F9F6F2"))
+                
+                label = self.labels[r][c]
                 if value == 0:
-                    self.labels[r][c].setText("")
+                    label.setText("")
                 else:
-                    self.labels[r][c].setText(str(value))
-                self.labels[r][c].setStyleSheet(
+                    label.setText(str(value))
+                
+                if value >= 1000:
+                    font_size = 18
+                else:
+                    font_size = 22
+                
+                label.setFont(QFont("Arial", font_size, QFont.Weight.Bold))
+                label.setStyleSheet(
                     f"background-color: {bg_color}; color: {text_color}; border-radius: 5px;"
                 )
 
         highscore = self.get_highscore()
         self.score_label.setText(f"Счёт: {self.game.score}  |  Рекорд: {max(highscore, self.game.score)}")
 
-    def show_game_over_message(self):
+    def show_game_over_message(self, won=False):
         current_score = self.game.score
         old_highscore = self.get_highscore()
-        is_new_record = current_score > old_highscore
-
-        if is_new_record:
+        
+        if current_score > old_highscore:
             self.save_highscore(current_score)
+
+        if won:
+            self.overlay_icon.setText("👑")
+            self.overlay_title.setText("Вы победили!")
+            self.overlay_message.setText(
+                f"Поздравляем! Вы успешно объединили две плитки 2048 и получили 4096!\nВаш счёт: {current_score}"
+            )
+        elif current_score > old_highscore:
             self.overlay_icon.setText("🏆")
             self.overlay_title.setText("Новый рекорд!")
             self.overlay_message.setText(
@@ -242,5 +245,7 @@ class GameWindow(QMainWindow):
             self.game.add_new_tile()
             self.update_ui()
 
-            if self.game.is_game_over():
-                self.show_game_over_message()
+            if self.game.is_won():
+                self.show_game_over_message(won=True)
+            elif self.game.is_game_over():
+                self.show_game_over_message(won=False)
