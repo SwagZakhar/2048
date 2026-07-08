@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QMainWindow, QWidget, QGridLayout, QLabel
+from PyQt6.QtWidgets import QMainWindow, QWidget, QGridLayout, QLabel, QVBoxLayout
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QKeyEvent
 
@@ -26,12 +26,23 @@ class GameWindow(QMainWindow):
 
     def init_ui(self):
         self.setWindowTitle("2048 на PyQt6")
-        self.setFixedSize(400, 450)
+        self.setFixedSize(400, 500)
 
         self.central_widget = QWidget(self)
         self.setCentralWidget(self.central_widget)
-        self.grid_layout = QGridLayout(self.central_widget)
+
+        main_layout = QVBoxLayout(self.central_widget)
+
+        self.score_label = QLabel("Счёт: 0", self)
+        self.score_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.score_label.setFont(QFont("Arial", 18, QFont.Weight.Bold))
+        self.score_label.setStyleSheet("color: #776E65; padding: 10px;")
+        main_layout.addWidget(self.score_label)
+
+        grid_widget = QWidget(self)
+        self.grid_layout = QGridLayout(grid_widget)
         self.grid_layout.setSpacing(10)
+        main_layout.addWidget(grid_widget)
 
         self.labels = [[None] * self.game.size for _ in range(self.game.size)]
 
@@ -40,7 +51,6 @@ class GameWindow(QMainWindow):
                 label = QLabel("", self)
                 label.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 label.setFont(QFont("Arial", 22, QFont.Weight.Bold))
-                label.setStyleSheet("background-color: #CDC1B4; color: #776E65; border-radius: 5px;")
                 self.grid_layout.addWidget(label, r, c)
                 self.labels[r][c] = label
 
@@ -59,7 +69,7 @@ class GameWindow(QMainWindow):
                     f"background-color: {bg_color}; color: {text_color}; border-radius: 5px;"
                 )
 
-        self.setWindowTitle(f"2048 | Счет: {self.game.score}")
+        self.score_label.setText(f"Счёт: {self.game.score}")
 
     def keyPressEvent(self, event: QKeyEvent):
         moved = False
