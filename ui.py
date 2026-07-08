@@ -1,7 +1,10 @@
 import os
-from PyQt6.QtWidgets import QMainWindow, QWidget, QGridLayout, QLabel, QVBoxLayout, QMessageBox
+from PyQt6.QtWidgets import (
+    QMainWindow, QWidget, QGridLayout, QLabel, QVBoxLayout,
+    QHBoxLayout, QPushButton, QGraphicsDropShadowEffect
+)
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QKeyEvent
+from PyQt6.QtGui import QFont, QKeyEvent, QColor
 
 TILE_COLORS = {
     0: ("#CDC1B4", "#776E65"),
@@ -30,6 +33,7 @@ class GameWindow(QMainWindow):
     def init_ui(self):
         self.setWindowTitle("2048 на PyQt6")
         self.setFixedSize(400, 500)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
         self.central_widget = QWidget(self)
         self.setCentralWidget(self.central_widget)
@@ -57,7 +61,90 @@ class GameWindow(QMainWindow):
                 self.grid_layout.addWidget(label, r, c)
                 self.labels[r][c] = label
 
+        self.init_game_over_overlay()
+
         self.update_ui()
+
+    def init_game_over_overlay(self):
+        # Полупрозрачная подложка на всё окно
+        self.overlay = QWidget(self.central_widget)
+        self.overlay.setGeometry(0, 0, 400, 500)
+        self.overlay.setStyleSheet("background-color: rgba(238, 228, 218, 200);")
+        self.overlay.hide()
+
+        outer_layout = QVBoxLayout(self.overlay)
+        outer_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # Карточка по центру
+        self.overlay_card = QWidget(self.overlay)
+        self.overlay_card.setFixedWidth(320)
+        self.overlay_card.setStyleSheet(
+            "background-color: #FAF8EF; border-radius: 16px;"
+        )
+
+        shadow = QGraphicsDropShadowEffect(self.overlay_card)
+        shadow.setBlurRadius(30)
+        shadow.setXOffset(0)
+        shadow.setYOffset(6)
+        shadow.setColor(QColor(0, 0, 0, 120))
+        self.overlay_card.setGraphicsEffect(shadow)
+
+        card_layout = QVBoxLayout(self.overlay_card)
+        card_layout.setContentsMargins(25, 25, 25, 25)
+        card_layout.setSpacing(12)
+
+        self.overlay_icon = QLabel("", self.overlay_card)
+        self.overlay_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.overlay_icon.setFont(QFont("Arial", 32))
+        card_layout.addWidget(self.overlay_icon)
+
+        self.overlay_title = QLabel("Игра окончена", self.overlay_card)
+        self.overlay_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.overlay_title.setFont(QFont("Arial", 20, QFont.Weight.Bold))
+        self.overlay_title.setStyleSheet("color: #776E65;")
+        self.overlay_title.setWordWrap(True)
+        card_layout.addWidget(self.overlay_title)
+
+        self.overlay_message = QLabel("", self.overlay_card)
+        self.overlay_message.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.overlay_message.setFont(QFont("Arial", 12))
+        self.overlay_message.setStyleSheet("color: #8F7A66;")
+        self.overlay_message.setWordWrap(True)
+        self.overlay_message.setMinimumHeight(90)
+        card_layout.addWidget(self.overlay_message)
+
+        buttons_layout = QHBoxLayout()
+        buttons_layout.setSpacing(12)
+
+        retry_button = QPushButton("Заново", self.overlay_card)
+        retry_button.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        retry_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        retry_button.setStyleSheet(
+            "QPushButton {"
+            "background-color: #8F7A66; color: #F9F6F2;"
+            "padding: 10px 0px; border-radius: 8px; border: none;"
+            "}"
+            "QPushButton:hover { background-color: #7A6857; }"
+        )
+        retry_button.clicked.connect(self.restart_game)
+        buttons_layout.addWidget(retry_button)
+
+        exit_button = QPushButton("Выход", self.overlay_card)
+        exit_button.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        exit_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        exit_button.setStyleSheet(
+            "QPushButton {"
+            "background-color: #BBADA0; color: #F9F6F2;"
+            "padding: 10px 0px; border-radius: 8px; border: none;"
+            "}"
+            "QPushButton:hover { background-color: #A69787; }"
+        )
+        exit_button.clicked.connect(self.close)
+        buttons_layout.addWidget(exit_button)
+
+        card_layout.addLayout(buttons_layout)
+
+        outer_layout.addWidget(self.overlay_card)
 
     def get_highscore(self):
         if os.path.exists(HIGHSCORE_FILE):
@@ -95,29 +182,31 @@ class GameWindow(QMainWindow):
 
         if is_new_record:
             self.save_highscore(current_score)
-            title = "🎉 Новый рекорд!"
-            message = f"Поздравляем! Вы побили прошлый рекорд!\n\nВаш счёт: {current_score}\nПредыдущий рекорд: {old_highscore}"
+            self.overlay_icon.setText("🏆")
+            self.overlay_title.setText("Новый рекорд!")
+            self.overlay_message.setText(
+                f"Поздравляем! Вы побили прошлый рекорд!\nВаш счёт: {current_score}\nПредыдущий рекорд: {old_highscore}"
+            )
         else:
-            title = "Игра окончена"
-            message = f"Ходов больше нет.\n\nВаш счёт: {current_score}\nЛучший результат: {old_highscore}"
+            self.overlay_icon.setText("😕")
+            self.overlay_title.setText("Игра окончена")
+            self.overlay_message.setText(
+                f"Ходов больше нет.\nВаш счёт: {current_score}\nЛучший результат: {old_highscore}"
+            )
 
-        msg_box = QMessageBox(self)
-        msg_box.setWindowTitle(title)
-        msg_box.setText(message)
-        
-        # Настройка кнопок на русском
-        retry_button = msg_box.addButton("Заново", QMessageBox.ButtonRole.AcceptRole)
-        exit_button = msg_box.addButton("Выход", QMessageBox.ButtonRole.RejectRole)
-        
-        msg_box.exec()
+        self.overlay.raise_()
+        self.overlay.show()
 
-        if msg_box.clickedButton() == retry_button:
-            self.game.reset_game()
-            self.update_ui()
-        else:
-            self.close()
+    def restart_game(self):
+        self.game.reset_game()
+        self.overlay.hide()
+        self.update_ui()
+        self.setFocus()
 
     def keyPressEvent(self, event: QKeyEvent):
+        if self.overlay.isVisible():
+            return
+
         moved = False
         if event.key() == Qt.Key.Key_Left:
             moved = self.game.move('left')
@@ -134,7 +223,6 @@ class GameWindow(QMainWindow):
         if moved:
             self.game.add_new_tile()
             self.update_ui()
-            
-            # Проверяем проигрыш после каждого успешного хода
+
             if self.game.is_game_over():
                 self.show_game_over_message()
