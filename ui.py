@@ -52,10 +52,10 @@ class GameWindow(QMainWindow):
         top_bar_layout = QHBoxLayout()
         top_bar_layout.setSpacing(10)
 
-        self.score_label = QLabel("Счёт: 0", self)
+        self.score_label = QLabel("Счёт: 0   |   Рекорд: 0", self)
         self.score_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.score_label.setFont(QFont("Arial", 16, QFont.Weight.Bold))
-        self.score_label.setStyleSheet("background-color: #BBADA0; color: #F9F6F2; border-radius: 6px; padding: 8px;")
+        self.score_label.setStyleSheet("background-color: #BBADA0; color: #F9F6F2; border-radius: 6px; padding: 6px 4px;")
         top_bar_layout.addWidget(self.score_label, stretch=1)
 
         in_game_menu_button = QPushButton("Меню", self)
@@ -137,8 +137,8 @@ class GameWindow(QMainWindow):
         card.setGraphicsEffect(shadow)
 
         card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(25, 30, 25, 30)
-        card_layout.setSpacing(14)
+        card_layout.setContentsMargins(25, 25, 25, 25)
+        card_layout.setSpacing(12)
 
         title = QLabel("2048", card)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -197,15 +197,6 @@ class GameWindow(QMainWindow):
                 f.write(str(score))
         except Exception:
             pass
-
-    def reset_highscore(self):
-        path = self.highscore_file()
-        if os.path.exists(path):
-            try:
-                os.remove(path)
-            except Exception:
-                pass
-        self.update_ui()
 
     def init_game_over_overlay(self):
         self.game_over_overlay = QWidget(self.central_widget)
@@ -286,16 +277,6 @@ class GameWindow(QMainWindow):
 
         card_layout.addLayout(buttons_layout)
 
-        reset_highscore_button = QPushButton("Сбросить рекорд", self.overlay_card)
-        reset_highscore_button.setFont(QFont("Arial", 10))
-        reset_highscore_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        reset_highscore_button.setStyleSheet(
-            "QPushButton { background-color: transparent; color: #8F7A66; text-decoration: underline; border: none; padding: 4px; }"
-            "QPushButton:hover { color: #776E65; }"
-        )
-        reset_highscore_button.clicked.connect(self.reset_highscore)
-        card_layout.addWidget(reset_highscore_button, alignment=Qt.AlignmentFlag.AlignCenter)
-
         outer_layout.addWidget(self.overlay_card)
 
     def update_ui(self):
@@ -315,15 +296,28 @@ class GameWindow(QMainWindow):
                     f"background-color: {bg_color}; color: {text_color}; border-radius: 4px;"
                 )
 
-        highscore = self.get_highscore()
-        self.score_label.setText(f"Счёт: {self.game.score}   |   Рекорд: {max(highscore, self.game.score)}")
+        old_highscore = self.get_highscore()
+        if self.game.score > old_highscore:
+            self.save_highscore(self.game.score)
+            current_highscore = self.game.score
+        else:
+            current_highscore = old_highscore
+
+        text_content = f"Счёт: {self.game.score}   |   Рекорд: {current_highscore}"
+        
+        if len(text_content) > 32:
+            font_size = 12
+        elif len(text_content) > 26:
+            font_size = 14
+        else:
+            font_size = 16
+
+        self.score_label.setFont(QFont("Arial", font_size, QFont.Weight.Bold))
+        self.score_label.setText(text_content)
 
     def show_game_over_message(self, won=False):
         current_score = self.game.score
         old_highscore = self.get_highscore()
-
-        if current_score > old_highscore:
-            self.save_highscore(current_score)
 
         if won:
             self.overlay_icon.setText("👑")
@@ -331,11 +325,11 @@ class GameWindow(QMainWindow):
             self.overlay_message.setText(
                 f"Поздравляем! Вы успешно объединили две плитки 2048!\nВаш счёт: {current_score}"
             )
-        elif current_score > old_highscore:
+        elif current_score >= old_highscore and current_score > 0:
             self.overlay_icon.setText("🏆")
             self.overlay_title.setText("Новый рекорд!")
             self.overlay_message.setText(
-                f"Поздравляем! Вы побили прошлый рекорд!\nВаш счёт: {current_score}\nПредыдущий рекорд: {old_highscore}"
+                f"Поздравляем! Вы побили прошлый рекорд!\nВаш счёт: {current_score}"
             )
         else:
             self.overlay_icon.setText("😕")
