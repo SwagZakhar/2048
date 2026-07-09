@@ -42,7 +42,7 @@ class GameWindow(QMainWindow):
 
     def init_ui(self):
         self.setWindowTitle("2048 game")
-        self.setFixedSize(400, 520)
+        self.setFixedSize(400, 530)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
         self.central_widget = QWidget(self)
@@ -50,23 +50,33 @@ class GameWindow(QMainWindow):
         self.central_widget.setStyleSheet("background-color: #FAF8EF;")
 
         main_layout = QVBoxLayout(self.central_widget)
-        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setContentsMargins(20, 15, 20, 15)
 
         top_bar_layout = QHBoxLayout()
-        top_bar_layout.setSpacing(10)
+        top_bar_layout.setSpacing(8)
 
-        self.score_label = QLabel("Счёт: 0   |   Рекорд: 0", self)
+        self.score_label = QLabel("СЧЁТ\n0", self)
         self.score_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.score_label.setFont(QFont("Arial", 16, QFont.Weight.Bold))
-        self.score_label.setStyleSheet("background-color: #BBADA0; color: #F9F6F2; border-radius: 6px; padding: 6px 4px;")
+        self.score_label.setFont(QFont("Arial", 11, QFont.Weight.Bold))
+        self.score_label.setStyleSheet(
+            "background-color: #BBADA0; color: #F9F6F2; border-radius: 6px; padding: 4px 2px;"
+        )
         top_bar_layout.addWidget(self.score_label, stretch=1)
 
+        self.highscore_label = QLabel("РЕКОРД\n0", self)
+        self.highscore_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.highscore_label.setFont(QFont("Arial", 11, QFont.Weight.Bold))
+        self.highscore_label.setStyleSheet(
+            "background-color: #BBADA0; color: #F9F6F2; border-radius: 6px; padding: 4px 2px;"
+        )
+        top_bar_layout.addWidget(self.highscore_label, stretch=1)
+
         in_game_menu_button = QPushButton("Меню", self)
-        in_game_menu_button.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        in_game_menu_button.setFont(QFont("Arial", 11, QFont.Weight.Bold))
         in_game_menu_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        in_game_menu_button.setFixedWidth(80)
+        in_game_menu_button.setFixedWidth(70)
         in_game_menu_button.setStyleSheet(
-            "QPushButton { background-color: #8F7A66; color: #F9F6F2; border-radius: 6px; padding: 8px; }"
+            "QPushButton { background-color: #8F7A66; color: #F9F6F2; border-radius: 6px; padding: 12px 0px; }"
             "QPushButton:hover { background-color: #7A6857; }"
         )
         in_game_menu_button.clicked.connect(self.show_size_menu)
@@ -118,7 +128,6 @@ class GameWindow(QMainWindow):
         else:
             base = 13
             
-        # Уменьшаем шрифт для больших чисел (пятизначных и более)
         if value >= 10000:
             return base - 6
         elif value >= 1000:
@@ -127,7 +136,7 @@ class GameWindow(QMainWindow):
 
     def init_size_menu_overlay(self):
         self.size_menu_overlay = QWidget(self.central_widget)
-        self.size_menu_overlay.setGeometry(0, 0, 400, 520)
+        self.size_menu_overlay.setGeometry(0, 0, 400, 530)
         self.size_menu_overlay.setStyleSheet("background-color: rgba(238, 228, 218, 220);")
         self.size_menu_overlay.hide()
 
@@ -209,7 +218,7 @@ class GameWindow(QMainWindow):
 
     def init_game_over_overlay(self):
         self.game_over_overlay = QWidget(self.central_widget)
-        self.game_over_overlay.setGeometry(0, 0, 400, 520)
+        self.game_over_overlay.setGeometry(0, 0, 400, 530)
         self.game_over_overlay.setStyleSheet("background-color: rgba(238, 228, 218, 200);")
         self.game_over_overlay.hide()
 
@@ -312,17 +321,17 @@ class GameWindow(QMainWindow):
         else:
             current_highscore = old_highscore
 
-        text_content = f"Счёт: {self.game.score}   |   Рекорд: {current_highscore}"
-        
-        if len(text_content) > 32:
-            font_size = 12
-        elif len(text_content) > 26:
-            font_size = 14
-        else:
-            font_size = 16
+        score_text = str(self.game.score)
+        highscore_text = str(current_highscore)
 
-        self.score_label.setFont(QFont("Arial", font_size, QFont.Weight.Bold))
-        self.score_label.setText(text_content)
+        score_font_size = 11 if len(score_text) <= 5 else (9 if len(score_text) <= 7 else 8)
+        hs_font_size = 11 if len(highscore_text) <= 5 else (9 if len(highscore_text) <= 7 else 8)
+
+        self.score_label.setFont(QFont("Arial", score_font_size, QFont.Weight.Bold))
+        self.highscore_label.setFont(QFont("Arial", hs_font_size, QFont.Weight.Bold))
+
+        self.score_label.setText(f"СЧЁТ\n{score_text}")
+        self.highscore_label.setText(f"РЕКОРД\n{highscore_text}")
 
     def show_game_over_message(self, won=False):
         current_score = self.game.score
