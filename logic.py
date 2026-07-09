@@ -66,10 +66,7 @@ class Game2048:
         return self.grid != old_grid
 
     def is_won(self):
-        for r in range(self.size):
-            for c in range(self.size):
-                if self.grid[r][c] >= 2048:
-                    return True
+        # Игра бесконечная, поэтому метод всегда возвращает False
         return False
 
     def is_game_over(self):

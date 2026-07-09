@@ -21,6 +21,9 @@ TILE_COLORS = {
     1024: ("#EDC53F", "#F9F6F2"),
     2048: ("#EDC22E", "#F9F6F2"),
     4096: ("#A370F7", "#F9F6F2"),
+    8192: ("#8246E2", "#F9F6F2"),
+    16384: ("#5E25B1", "#F9F6F2"),
+    32768: ("#3F1480", "#F9F6F2"),
 }
 
 HIGHSCORE_FILE_TEMPLATE = "highscore_{}.txt"
@@ -114,7 +117,13 @@ class GameWindow(QMainWindow):
             base = 16
         else:
             base = 13
-        return base - 4 if value >= 1000 else base
+            
+        # Уменьшаем шрифт для больших чисел (пятизначных и более)
+        if value >= 10000:
+            return base - 6
+        elif value >= 1000:
+            return base - 4
+        return base
 
     def init_size_menu_overlay(self):
         self.size_menu_overlay = QWidget(self.central_widget)
@@ -283,7 +292,7 @@ class GameWindow(QMainWindow):
         for r in range(self.game.size):
             for c in range(self.game.size):
                 value = self.game.grid[r][c]
-                bg_color, text_color = TILE_COLORS.get(value, ("#3C3A32", "#F9F6F2"))
+                bg_color, text_color = TILE_COLORS.get(value, ("#242119", "#F9F6F2"))
 
                 label = self.labels[r][c]
                 if value == 0:
@@ -319,13 +328,7 @@ class GameWindow(QMainWindow):
         current_score = self.game.score
         old_highscore = self.get_highscore()
 
-        if won:
-            self.overlay_icon.setText("👑")
-            self.overlay_title.setText("Вы победили!")
-            self.overlay_message.setText(
-                f"Поздравляем! Вы успешно объединили две плитки 2048!\nВаш счёт: {current_score}"
-            )
-        elif current_score >= old_highscore and current_score > 0:
+        if current_score >= old_highscore and current_score > 0:
             self.overlay_icon.setText("🏆")
             self.overlay_title.setText("Новый рекорд!")
             self.overlay_message.setText(
@@ -369,7 +372,5 @@ class GameWindow(QMainWindow):
             self.game.add_new_tile()
             self.update_ui()
 
-            if self.game.is_won():
-                self.show_game_over_message(won=True)
-            elif self.game.is_game_over():
+            if self.game.is_game_over():
                 self.show_game_over_message(won=False)
